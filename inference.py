@@ -39,10 +39,11 @@ def initialize_pipeline(model, device="cuda", xformers=False, sdp=False):
 
 
 def vid2vid(
-    pipeline, init_video, init_weight, prompt, negative_prompt, height, width, num_inference_steps, guidance_scale
+    pipeline, init_video, init_weight, prompt, negative_prompt, height, width, num_inference_steps, generator, guidance_scale
 ):
     num_frames = init_video.shape[2]
     init_video = rearrange(init_video, "b c f h w -> (b f) c h w")
+    pipeline.generator=generator
     latents = pipeline.vae.encode(init_video).latent_dist.sample()
     latents = rearrange(latents, "(b f) c h w -> b c f h w", f=num_frames)
     latents = pipeline.scheduler.add_noise(
@@ -126,6 +127,10 @@ def inference(
         negative_prompt = ([negative_prompt] * batch_size) if negative_prompt is not None else None
 
         if init_video is not None:
+            g_cuda = torch.Generator(device='cuda')
+            g_cuda.manual_seed(seed)
+            g_cpu = torch.Generator()
+            g_cpu.manual_seed(seed)
             videos = vid2vid(
                 pipeline=pipeline,
                 init_video=init_video.to(device=device, dtype=torch.half),
@@ -135,6 +140,7 @@ def inference(
                 height=height,
                 width=width,
                 num_inference_steps=num_steps,
+                generator=g_cuda,
                 guidance_scale=guidance_scale,
             )
 
