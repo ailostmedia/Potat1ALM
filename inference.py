@@ -212,6 +212,7 @@ if __name__ == "__main__":
     out_stem = f"{output_dir}/"
     if init_video is not None:
         out_stem += f"({Path(init_video).stem}) * {args['init_weight']} | "
+    prompt = prompt[:25]
     out_stem += f"{prompt}"
     out_stem +=" "
     out_stem += f"{seed}"
